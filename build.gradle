@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+    id "application"
+
 }
 
 group 'com.cipher0x'
@@ -22,4 +24,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+ext {
+    javaMainClass = "com.cipher0x.Main"
+}
+
+application {
+    mainClassName = javaMainClass
 }
