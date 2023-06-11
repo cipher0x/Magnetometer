@@ -1,66 +1,56 @@
 package com.cipher0x;
 
 import com.fazecast.jSerialComm.SerialPort;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.time.Millisecond;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
 
+import javax.swing.*;
 import javax.vecmath.Vector3d;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Main {
+  static TimeSeries ts = new TimeSeries("delta");
+
   public static void main(String[] args) {
-    SerialPort[] ports = SerialPort.getCommPorts();
+    gen myGen = new gen();
+    new Thread(myGen).start();
 
-    for (SerialPort port : ports) {
-      System.out.println(port.getSystemPortName());
-    }
+    TimeSeriesCollection dataset = new TimeSeriesCollection(ts);
+    JFreeChart chart = ChartFactory.createTimeSeriesChart(
+            "Magnetometer Delta",
+            "Time",
+            "Delta",
+            dataset,
+            true,
+            true,
+            false
+    );
+    final XYPlot plot = chart.getXYPlot();
+    ValueAxis axis = plot.getDomainAxis();
+    axis.setAutoRange(true);
+    axis.setFixedAutoRange(1000000.0);
 
-    SerialPort comPort = SerialPort.getCommPorts()[2];
-    comPort.openPort();
-    comPort.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
-    Vector3d prevVec = null;
-    Vector3d currentVec = null;
-    Vector3d nextVec = null;
-    try {
-      while (true) {
-        while (comPort.bytesAvailable() == 0)
-          Thread.sleep(20);
+    JFrame frame = new JFrame("Magnetometer");
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    ChartPanel label = new ChartPanel(chart);
+    frame.getContentPane().add(label);
+    //Suppose I add combo boxes and buttons here later
 
-        Thread.sleep(200);
-        byte[] readBuffer = new byte[comPort.bytesAvailable()];
-        int numRead = comPort.readBytes(readBuffer, readBuffer.length);
-        //System.out.println("Read " + numRead + " bytes.");
-        //System.out.println(hexToFormattedHex(bytesToHex(readBuffer)));
-
-        //look for 55 54 then stop when you hit 55
-        String hexStr = bytesToHex(readBuffer, numRead);
-        List<String> hexLines = getMagnoLines(hexStr);
-        List<String> validMagneticLines = getMagneticLines(hexLines);
-        List<Vector3d> vecs = validMagneticLines.stream().map(Main::getMagVectors).toList();
-        //vecs.stream().forEach(System.out::println);
-        for(int i = 0; i < vecs.size() - 1; i ++) {
-          if(currentVec != null) {
-            currentVec = nextVec;
-            nextVec = vecs.get(i);
-          }
-          else {
-            currentVec = vecs.get(i);
-            nextVec = vecs.get(i+1);
-          }
-          BigDecimal delta = BigDecimal.valueOf(currentVec.angle(nextVec));
-          delta = delta.setScale(16, RoundingMode.CEILING);
-          System.out.println(delta.toPlainString());
-        }
-
-
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    comPort.closePort();
+    frame.pack();
+    frame.setVisible(true);
   }
 
   public static Vector3d getMagVectors(String magLine){
@@ -116,5 +106,69 @@ public class Main {
       newArrIndex += 3;
     }
     return new String(formattedHexChars);
+  }
+
+  static class gen implements Runnable {
+    private Random randGen = new Random();
+
+    public void run() {
+      SerialPort[] ports = SerialPort.getCommPorts();
+
+      for (SerialPort port : ports) {
+        System.out.println(port.getSystemPortName());
+      }
+
+      SerialPort comPort = SerialPort.getCommPorts()[0];
+      comPort.openPort();
+      comPort.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
+      Vector3d prevVec = null;
+      Vector3d currentVec = null;
+      Vector3d nextVec = null;
+      try {
+        while (true) {
+          while (comPort.bytesAvailable() == 0)
+            Thread.sleep(20);
+
+          Thread.sleep(100);
+          byte[] readBuffer = new byte[comPort.bytesAvailable()];
+          int numRead = comPort.readBytes(readBuffer, readBuffer.length);
+
+          //look for 55 54 then stop when you hit 55
+          String hexStr = bytesToHex(readBuffer, numRead);
+          List<String> hexLines = getMagnoLines(hexStr);
+          List<String> validMagneticLines = getMagneticLines(hexLines);
+          List<Vector3d> vecs = validMagneticLines.stream().map(Main::getMagVectors).toList();
+          for(int i = 0; i < vecs.size() - 1; i ++) {
+            if(currentVec != null) {
+              currentVec = nextVec;
+              nextVec = vecs.get(i);
+            }
+            else {
+              currentVec = vecs.get(i);
+              nextVec = vecs.get(i+1);
+            }
+            BigDecimal delta = BigDecimal.valueOf(currentVec.angle(nextVec));
+            delta = delta.setScale(16, RoundingMode.CEILING);
+            ts.addOrUpdate(new Millisecond(), delta);
+            //System.out.println(delta.toPlainString());
+          }
+
+
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      comPort.closePort();
+//      while(true) {
+//        int num = randGen.nextInt(1000);
+//        System.out.println(num);
+//        ts.addOrUpdate(new Millisecond(), num);
+//        try {
+//          Thread.sleep(20);
+//        } catch (InterruptedException ex) {
+//          System.out.println(ex);
+//        }
+//      }
+    }
   }
 }
