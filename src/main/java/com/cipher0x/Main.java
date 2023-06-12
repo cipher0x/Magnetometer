@@ -7,7 +7,6 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.time.Millisecond;
-import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
@@ -109,8 +108,6 @@ public class Main {
   }
 
   static class gen implements Runnable {
-    private Random randGen = new Random();
-
     public void run() {
       SerialPort[] ports = SerialPort.getCommPorts();
 
@@ -121,14 +118,18 @@ public class Main {
       SerialPort comPort = SerialPort.getCommPorts()[0];
       comPort.openPort();
       comPort.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
-      Vector3d prevVec = null;
       Vector3d currentVec = null;
       Vector3d nextVec = null;
       try {
         while (true) {
-          while (comPort.bytesAvailable() == 0)
+          while (comPort.bytesAvailable() == 0) {
             Thread.sleep(20);
-
+          }
+          if(comPort.bytesAvailable() == -1) {
+            System.out.println("ERROR attempting to read read bytes from serial port");
+            System.out.println("You may not have precession to access the serial port");
+            throw new Exception("ERROR connecting to Serial device");
+          }
           Thread.sleep(100);
           byte[] readBuffer = new byte[comPort.bytesAvailable()];
           int numRead = comPort.readBytes(readBuffer, readBuffer.length);
@@ -150,25 +151,12 @@ public class Main {
             BigDecimal delta = BigDecimal.valueOf(currentVec.angle(nextVec));
             delta = delta.setScale(16, RoundingMode.CEILING);
             ts.addOrUpdate(new Millisecond(), delta);
-            //System.out.println(delta.toPlainString());
           }
-
-
         }
       } catch (Exception e) {
         e.printStackTrace();
       }
       comPort.closePort();
-//      while(true) {
-//        int num = randGen.nextInt(1000);
-//        System.out.println(num);
-//        ts.addOrUpdate(new Millisecond(), num);
-//        try {
-//          Thread.sleep(20);
-//        } catch (InterruptedException ex) {
-//          System.out.println(ex);
-//        }
-//      }
     }
   }
 }
