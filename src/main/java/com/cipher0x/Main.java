@@ -95,18 +95,6 @@ public class Main {
     return new String(hexChars);
   }
 
-  private static final String hexToFormattedHex(String strIn) {
-    char[] formattedHexChars = new char[strIn.length() + (int) (strIn.length() / 2)];
-    int newArrIndex = 0;
-    for (int x = 0; x != strIn.length(); x = x+2) {
-      formattedHexChars[newArrIndex] = strIn.charAt(x);
-      formattedHexChars[newArrIndex + 1] = strIn.charAt(x + 1);
-      formattedHexChars[newArrIndex + 2] = ' ';
-      newArrIndex += 3;
-    }
-    return new String(formattedHexChars);
-  }
-
   static class gen implements Runnable {
     public void run() {
       SerialPort[] ports = SerialPort.getCommPorts();
