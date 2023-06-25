@@ -1,5 +1,6 @@
 package com.cipher0x;
 
+import com.cipher0x.Magnetometer.SerialPortAccess;
 import com.fazecast.jSerialComm.SerialPort;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -12,12 +13,12 @@ import org.jfree.data.time.TimeSeriesCollection;
 
 import javax.swing.*;
 import javax.vecmath.Vector3d;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -103,7 +104,14 @@ public class Main {
         System.out.println(port.getSystemPortName());
       }
 
-      SerialPort comPort = SerialPort.getCommPorts()[0];
+        SerialPortAccess serialPortAccess = new SerialPortAccess();
+        try {
+            serialPortAccess.loadSerialPortSettings();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        SerialPort comPort = SerialPort.getCommPorts()[0];
       comPort.openPort();
       comPort.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
       Vector3d currentVec = null;

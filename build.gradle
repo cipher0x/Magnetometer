@@ -19,6 +19,7 @@ dependencies {
     implementation 'com.fazecast:jSerialComm:2.9.3'
     implementation 'javax.vecmath:vecmath:1.5.2'
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
 }
 
