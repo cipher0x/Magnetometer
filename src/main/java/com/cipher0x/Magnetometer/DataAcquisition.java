@@ -23,7 +23,7 @@ public class DataAcquisition {
     }
 
     public List<Vector3d> getAcquisitionVectorBuffer() throws InterruptedException {
-        Thread.sleep(100);
+        Thread.sleep(500);
         byte[] readBuffer = new byte[comPort.bytesAvailable()];
         int numRead = comPort.readBytes(readBuffer, readBuffer.length);
         String hexStr = bytesToHex(readBuffer, numRead);
