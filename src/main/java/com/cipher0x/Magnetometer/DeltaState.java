@@ -17,7 +17,6 @@ public class DeltaState {
     public List<BigDecimal> getOneStepDelta(List<Vector3d> inVec) {
         List<Vector3d> localInVec = new ArrayList<>(List.copyOf(inVec));
         List<BigDecimal> deltas= new ArrayList<>();
-        localInVec.forEach(System.out::println);
         if(localInVec.isEmpty()) {
             return deltas;
         }
